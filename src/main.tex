@@ -1,0 +1,288 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=0.5in]{geometry}
+\usepackage{lmodern, microtype, xcolor, graphicx, tabularx, booktabs}
+\usepackage[most]{tcolorbox}
+\usepackage{array}
+\usepackage{xstring} 
+
+\newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
+\newcolumntype{T}[1]{>{\centering\arraybackslash}p{#1}} 
+
+% ---------- Palette ----------
+\definecolor{accent}{HTML}{1F4E79}
+\colorlet{pos}{green!60!black}
+\colorlet{neg}{red!70!black}
+\colorlet{neu}{gray!70!black}
+
+% ---------- Fields ----------
+\newcommand{\CourseName}{CSE101}
+\newcommand{\CourseYear}{2025}
+\newcommand{\CourseTerm}{Fall C}
+\newcommand{\CourseCode}{80312}
+\newcommand{\Instructor}{John Smith}
+
+\newcommand{\CourseSize}{50}
+\newcommand{\CourseSizeDelta}{-24}
+
+\newcommand{\Responses}{25}
+\newcommand{\ResponseRate}{50\%}
+\newcommand{\ResponseDelta}{-5\%}
+
+\newcommand{\AvgPone}{4.65}
+\newcommand{\AvgPoneDelta}{-0.05}
+
+\newcommand{\AvgPtwo}{4.71}
+\newcommand{\AvgPtwoDelta}{+0.12}
+
+\newcommand{\MedianGrade}{B+}
+\newcommand{\MedianGradeDelta}{+0}
+
+\newcommand{\GPA}{3.32}
+\newcommand{\GPADelta}{+0.07}
+
+\newcommand{\PassNum}{45}
+\newcommand{\PassPct}{90\%}
+\newcommand{\PassDelta}{+5\%}
+
+\newcommand{\FailNum}{2}
+\newcommand{\FailPct}{4\%}
+\newcommand{\FailDelta}{+5\%}
+
+\newcommand{\DropNum}{1}
+\newcommand{\DropPct}{2\%}
+\newcommand{\DropDelta}{+5\%}
+
+\newcommand{\WithdrawNum}{2}
+\newcommand{\WithdrawPct}{4\%}
+\newcommand{\WithdrawDelta}{+5\%}
+
+% ---------- Outlier placeholders ----------
+\newcommand{\OutlierAvg}{4.5}
+\newcommand{\OutOneName}{Textbook/supplementary material in support of the course.}
+\newcommand{\OutOneScore}{2.43}
+\newcommand{\OutOneDelta}{-2.07}
+
+\newcommand{\OutTwoName}{Value of assigned homework in support of course topics.}
+\newcommand{\OutTwoScore}{2.63}
+\newcommand{\OutTwoDelta}{-1.87}
+
+\newcommand{\OutThreeName}{Value of laboratory assignments/projects in support of the course topics.}
+\newcommand{\OutThreeScore}{2.53}
+\newcommand{\OutThreeDelta}{-1.97}
+
+% ---------- Grade distribution fields ----------
+\newcommand{\GradeACount}{0}
+\newcommand{\GradeAPct}{0\%}
+\newcommand{\GradeADelta}{+0\%}
+
+\newcommand{\GradeBCount}{0}
+\newcommand{\GradeBPct}{0\%}
+\newcommand{\GradeBDelta}{+0\%}
+
+\newcommand{\GradeCCount}{0}
+\newcommand{\GradeCPct}{0\%}
+\newcommand{\GradeCDelta}{+0\%}
+
+\newcommand{\GradeDCount}{0}
+\newcommand{\GradeDPct}{0\%}
+\newcommand{\GradeDDelta}{+0\%}
+
+\newcommand{\GradeFCount}{0}
+\newcommand{\GradeFPct}{0\%}
+\newcommand{\GradeFDelta}{+0\%}
+
+% Quartiles (Q1/Median/Q3)
+\newcommand{\Qone}{--}
+\newcommand{\Qtwo}{--}
+\newcommand{\Qthree}{--}
+
+% Quartile deltas
+\newcommand{\QoneDelta}{+0}
+\newcommand{\QtwoDelta}{+0}
+\newcommand{\QthreeDelta}{+0}
+
+% Layout control for Grade Distribution
+\newlength{\RightColW}
+\setlength{\RightColW}{2.2in}
+\newlength{\GradeVisH}
+\setlength{\GradeVisH}{2.2in}
+
+% ---------- Header toggles (booleans) ----------
+\newif\ifShowHdrOverview
+\newif\ifShowHdrEval
+\newif\ifShowHdrTitle
+
+\ShowHdrOverviewfalse
+\ShowHdrEvalfalse
+\ShowHdrTitletrue
+
+% ---------- Derived header macro ----------
+\newcommand{\CourseHeader}{\CourseName\ (\CourseYear\ \CourseTerm) \CourseCode\ \textendash\ \Instructor}
+
+% Optional: page title styling hook
+\newcommand{\PageTitle}{\LARGE\bfseries\textcolor{accent}{\CourseHeader}}
+
+% ---------- Optional subtitle under the page title ----------
+\newcommand{\BaselineText}{Compared to baseline: Average of all CSE100 courses}
+\newcommand{\PageSubtitle}{\footnotesize\textcolor{neu}{\BaselineText}}
+
+% ---------- Helpers ----------
+\newcommand{\posD}[1]{\textcolor{pos}{(#1)}}
+\newcommand{\negD}[1]{\textcolor{neg}{(#1)}}
+\newcommand{\neuD}[1]{\textcolor{neu}{(#1)}}
+
+% Auto-colored delta:
+% - Positive: strings beginning with '+' (except exact '+0' or '+0%')
+% - Negative: strings beginning with '-' (except exact '-0' or '-0%')
+% - Neutral: '0', '0%', '+0', '+0%', '-0', '-0%'
+\newcommand{\autoD}[1]{%
+	\IfStrEq{#1}{0}{\neuD{#1}}{%
+	\IfStrEq{#1}{0\%}{\neuD{#1}}{%
+	\IfStrEq{#1}{+0}{\neuD{#1}}{%
+	\IfStrEq{#1}{+0\%}{\neuD{#1}}{%
+	\IfStrEq{#1}{-0}{\neuD{#1}}{%
+	\IfStrEq{#1}{-0\%}{\neuD{#1}}{%
+	\IfBeginWith{#1}{+}{\posD{#1}}{%
+	\IfBeginWith{#1}{-}{\negD{#1}}{\neuD{#1}}%
+	}}}}}}}%
+}
+
+\newcommand{\MetricLeft}[3]{%
+	\textbf{#1:}~#2\if\relax\detokenize{#3}\relax\else~(#3)\fi
+}
+
+% Width of the right-justified delta column (used everywhere)
+\newlength{\DeltaColW}
+\setlength{\DeltaColW}{1.8cm}
+
+% ---------- Box style (fixed: enable enhanced so frame exists) ----------
+\tcbset{
+	enhanced,
+	frame style={draw=black!35, line width=.6pt},
+	interior style={left color=black!2,right color=black!0},
+	arc=2mm,
+	boxsep=5pt, left=8pt, right=8pt, top=8pt, bottom=8pt,
+}
+
+\pagestyle{empty}
+
+\begin{document}
+
+% ---------- Page-level title (toggleable) ----------
+\ifShowHdrTitle
+	\begin{center}
+		{\PageTitle}\\
+		{\PageSubtitle}
+	\end{center}
+\fi
+
+\begin{tcolorbox}
+	{\Large\bfseries\textcolor{accent}{Overview}}
+	\ifShowHdrOverview\hfill\textbf{\CourseHeader}\fi
+
+	\renewcommand{\arraystretch}{1.25}
+	\begin{tabularx}{\textwidth}{@{} >{\raggedright\arraybackslash}X c >{\raggedright\arraybackslash}X @{}}
+
+	% -------- Left column: each row has a fixed right-justified delta cell --------
+	\begin{tabular}{@{}l >{\raggedleft\arraybackslash}p{\DeltaColW}@{}}
+		\MetricLeft{Course Size}{\CourseSize}{} & \autoD{\CourseSizeDelta}\\
+		\MetricLeft{Responses}{\Responses}{\ResponseRate} & \autoD{\ResponseDelta}\\
+		\MetricLeft{Avg Part 1}{\AvgPone}{} & \autoD{\AvgPoneDelta}\\
+		\MetricLeft{Avg Part 2}{\AvgPtwo}{} & \autoD{\AvgPtwoDelta}\\
+		\MetricLeft{Median Grade}{\MedianGrade}{} & \autoD{\MedianGradeDelta}\\
+		\MetricLeft{GPA}{\GPA}{} & \autoD{\GPADelta}\\
+	\end{tabular}
+	&
+	% -------- Center: pie chart placeholder --------
+	\begin{minipage}[c]{1.9in}
+		\centering
+		\fbox{\begin{minipage}[c][1.9in][c]{1.7in}\centering
+			\small Pie Chart\\[2pt]Placeholder
+			\par\medskip
+			% Replace box with actual image
+			% \includegraphics[width=1.7in]{piechart.png}
+		\end{minipage}}
+	\end{minipage}
+	&
+	% -------- Right column: same aligned delta cell --------
+	\begin{tabular}{@{}l >{\raggedleft\arraybackslash}p{\DeltaColW}@{}}
+		\MetricLeft{Pass}{\PassNum}{\PassPct} & \autoD{\PassDelta}\\
+		\MetricLeft{Fail}{\FailNum}{\FailPct} & \autoD{\FailDelta}\\
+		\MetricLeft{Drop}{\DropNum}{\DropPct} & \autoD{\DropDelta}\\
+		\MetricLeft{Withdraw}{\WithdrawNum}{\WithdrawPct} & \autoD{\WithdrawDelta}\\
+	\end{tabular}
+
+	\end{tabularx}
+\end{tcolorbox}
+
+% ---------- Evaluation Metrics box ----------
+\begin{tcolorbox}
+	{\Large\bfseries\textcolor{accent}{Evaluation Metrics}}
+	\ifShowHdrEval\hfill\textbf{\CourseHeader}\fi
+
+	\vspace{2pt}
+	\textbf{Outliers:}
+
+	\vspace{2pt}
+	\renewcommand{\arraystretch}{1.2}
+	\begin{tabularx}{\textwidth}{@{} >{\raggedright\arraybackslash}X >{\raggedleft\arraybackslash}p{\DeltaColW}@{}}
+		\MetricLeft{\OutOneName}{\OutOneScore/5}{} & \autoD{\OutOneDelta}\\
+		\MetricLeft{\OutTwoName}{\OutTwoScore/5}{} & \autoD{\OutTwoDelta}\\
+		\MetricLeft{\OutThreeName}{\OutThreeScore/5}{} & \autoD{\OutThreeDelta}\\
+	\end{tabularx}
+\end{tcolorbox}
+
+% ---------- Comment Summary box ----------
+\begin{tcolorbox}
+	{\Large\bfseries\textcolor{accent}{Comment Summary}}
+
+	\vspace{2pt}
+	\renewcommand{\arraystretch}{1.2}
+	\begin{tabularx}{\textwidth}{@{} >{\raggedright\arraybackslash}X >{\raggedleft\arraybackslash}p{\DeltaColW}@{}}
+		\MetricLeft{Responses Count}{\Responses}{} & \autoD{\ResponseDelta}\\
+	\end{tabularx}
+
+	\vspace{2pt}
+    \textbf{(AI Generated)}
+	\noindent Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Vivamus maximus, arcu vel cursus euismod, tortor augue gravida ex, et laoreet enim est vitae mauris. Aliquam sit amet tristique eros. Integer ac nibh nec risus suscipit porttitor. Morbi ac nisl id mauris posuere elementum. % macro this instead of having it down here? probably
+\end{tcolorbox}
+
+% ---------- Grade Distribution box (new) ----------
+\begin{tcolorbox}
+	{\Large\bfseries\textcolor{accent}{Grade Distribution}}
+
+	% Top line: Pass/Fail totals on left, GPA on right (with % and deltas)
+	\vspace{2pt}
+	\noindent\textbf{Pass/Fail Totals:}~\PassNum~(\PassPct)~pass~\autoD{\PassDelta}~/~\FailNum~(\FailPct)~fail~\autoD{\FailDelta}\hfill\textbf{GPA:}~\GPA~\autoD{\GPADelta}
+
+	\vspace{2pt}
+	% Left (histogram expands) and Right (grade table, vertically aligned to TOP)
+	\begin{tabularx}{\textwidth}{@{} X T{\RightColW} @{}}
+		\fbox{\begin{minipage}[c][\GradeVisH][c]{\linewidth}\centering
+			\small Distribution Histogram\\[2pt]Placeholder
+		\end{minipage}}
+		&
+		\begingroup\centering
+			\renewcommand{\arraystretch}{1.1}
+			\begin{tabular}{@{}l r r r@{}}
+				\toprule
+				\textbf{Grade} & \textbf{\#} & \textbf{\%} & $\boldsymbol{\Delta}$ \\
+				\midrule
+				A & \GradeACount & \GradeAPct & \autoD{\GradeADelta} \\
+				B & \GradeBCount & \GradeBPct & \autoD{\GradeBDelta} \\
+				C & \GradeCCount & \GradeCPct & \autoD{\GradeCDelta} \\
+				D & \GradeDCount & \GradeDPct & \autoD{\GradeDDelta} \\
+				F & \GradeFCount & \GradeFPct & \autoD{\GradeFDelta} \\
+				\bottomrule
+			\end{tabular}
+		\par\endgroup
+	\end{tabularx}
+
+	\vspace{2pt}
+	% Quartiles centered under histogram (left column width)
+	\noindent\makebox[\dimexpr\linewidth-\RightColW\relax][c]{\textbf{Q1:}~\Qone~\autoD{\QoneDelta}\quad\textbf{Median:}~\Qtwo~\autoD{\QtwoDelta}\quad\textbf{Q3:}~\Qthree~\autoD{\QthreeDelta}}
+
+\end{tcolorbox}
+
+\end{document}
